@@ -22,39 +22,39 @@ def login():
     # If the user is not logged in, show the login form
     email = st.text_input("Email")
     password = st.text_input("Password", type="password")
-
     if st.button("Login"):
         if email and password:
             try:
-                # Attempt to sign in with Supabase Auth
-                user = supabase.auth.sign_in_with_password({
+                # Perform login
+                auth_response = supabase.auth.sign_in_with_password({
                     "email": email,
                     "password": password
                 })
 
-                # Check if the email is confirmed
-                if user and user.user_metadata.get("email_confirmed") == True:
+                # Extract the user from the auth response
+                user = auth_response.user
+
+                if user and user.confirmed_at is not None:
                     st.session_state.logged_in = True
                     st.session_state.email = email
                     st.session_state.username = user.user_metadata.get("username", "Guest")
                     st.success("Login successful!")
 
-                    # Redirect to Diary page or Character Creation based on conditions
-                    if not user.user_metadata.get("username"):  # If username is missing, redirect to signup
-                        st.session_state.page = "2_CreateCharacter.py"
-                        st.experimental_rerun()
+                    # Redirect to appropriate page
+                    if not user.user_metadata.get("username"):
+                        st.switch_page("pages/3_Diary.py")
                     else:
-                        st.session_state.page = "2_Diary.py"
-                        st.experimental_rerun()
+                        st.switch_page("pages/2_Signup.py")
 
                 elif user:
-                    st.warning("Please confirm your email before logging in. Check your inbox for the confirmation email.")
+                    st.warning("Please confirm your email before logging in.")
                 else:
                     st.error("Invalid email or password.")
             except Exception as e:
                 st.error(f"Login failed: {e}")
-        else:
-            st.warning("Please enter both email and password.")
+    else:
+        st.warning("Please enter both email and password.")
+            
 
     # Add a link to the signup page
         st.page_link("pages/2_Signup.py", label="Don't have an account? Sign Up Here")
