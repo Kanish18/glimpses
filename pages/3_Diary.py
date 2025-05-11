@@ -4,66 +4,100 @@ from PIL import Image
 import openai
 import requests
 from io import BytesIO
-import os
+import base64
+from supabase import create_client,Client
 
-# Set your OpenAI API key
-openai.api_key = "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"  # Use your actual key securely in production
+from PIL import Image
+from io import BytesIO
 
-st.set_page_config(page_title="📖 Diary Entry", layout="wide")
-st.title("Welcome to your Diary")
+# Convert and prepare image
+def prepare_image_for_openai(image_path):
+    image = Image.open(image_path).convert("RGBA")
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
 
-def generate_ai_image(prompt):
+# --- Setup ---
+SUPABASE_URL = "https://mhwepdtjevqupglpurpn.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1od2VwZHRqZXZxdXBnbHB1cnBuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Njg4NTc0MSwiZXhwIjoyMDYyNDYxNzQxfQ.PiMUgXvBj3gPFbY1j4djF5iE3w9lfOeZQaMu5t1Xce0"  # Keep this secret
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+openai.api_key = "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"
+
+# Page setup
+def generate_ai_image(prompt, avatar_url):
     try:
-        response = openai.images.generate(
-            model="dall-e-3",
+        # Download avatar
+        response = requests.get(avatar_url)
+        if response.status_code != 200:
+            raise ValueError("Failed to fetch avatar from Supabase.")
+
+        # Convert to PNG buffer
+        image = Image.open(BytesIO(response.content)).convert("RGBA")
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        buffer.name = "avatar.png"
+        buffer.seek(0)
+
+        # Generate image
+        result = openai.images.edit(
+            model="gpt-image-1",
+            image=buffer,
             prompt=prompt,
             size="1024x1024",
-            quality="standard",
-            n=1,
+            quality="low"
         )
-        image_url = response.data[0].url
-        return image_url
+
+        # Decode result
+        image_base64 = result.data[0].b64_json
+        image_bytes = base64.b64decode(image_base64)
+        return Image.open(BytesIO(image_bytes))
+
     except Exception as e:
-        st.error(f"Failed to generate image: {e}")
+        st.error(f"Image generation failed: {e}")
         return None
 
+# --- Main Diary Page ---
 def diary_page():
-    st.title("📔 Your Diary")
+    if "email" not in st.session_state:
+        st.warning("You must be logged in to access your diary.")
+        return
 
-    if "generated_image_url" not in st.session_state:
-        st.session_state.generated_image_url = None
+    if "generated_image" not in st.session_state:
+        st.session_state.generated_image = None
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("### ✍️ Write your story")
+        st.markdown("### ✍️ Write your memory")
         story_input = st.text_area("Memory", height=400, label_visibility="collapsed")
 
+        # Fetch avatar URL
+        email = st.session_state.email
+        avatar_query = supabase.table("users").select("avatar_url").eq("email", email).single().execute()
+
+        if avatar_query.data:
+            avatar_url = avatar_query.data.get("avatar_url")
+        else:
+            st.error("Avatar not found for this user. Please ensure you have an avatar uploaded.")
+            return
+
         if st.button("Generate AI Image"):
-            if story_input.strip():
+            if story_input.strip() and avatar_url:
                 with st.spinner("Generating AI image..."):
-                    image_url = generate_ai_image(story_input)
-                    if image_url:
-                        st.session_state.generated_image_url = image_url
+                    generated_image = generate_ai_image(story_input, avatar_url)
+                    if generated_image:
+                        st.session_state.generated_image = generated_image
             else:
-                st.warning("Please write something in the story box.")
+                st.warning("Please write something and ensure your avatar is available.")
 
         if st.button("Save Entry"):
-            st.success("Story saved! (Note: Add database save logic here.)")
+            st.success("Story saved! (Add DB logic here.)")
 
     with col2:
-        st.markdown("### 🖼️ Your AI Image")
-        if st.session_state.generated_image_url:
-            try:
-                image_response = requests.get(st.session_state.generated_image_url)
-                image = Image.open(BytesIO(image_response.content))
-                st.image(image, caption="Generated Image", use_column_width=True)
-            except:
-                st.error("Failed to load the generated image.")
-
-        uploaded_file = st.file_uploader("Or upload your own image", type=["png", "jpg", "jpeg"], label_visibility="collapsed")
-        if uploaded_file:
-            image = Image.open(uploaded_file)
-            st.image(image, caption="Your Uploaded Image", use_column_width=True)
+        st.markdown("### 🖼️ Your AI-Generated Image")
+        if st.session_state.generated_image:
+            st.image(st.session_state.generated_image, caption="Generated Image", use_container_width=True)
 
 diary_page()

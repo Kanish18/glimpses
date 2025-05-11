@@ -11,8 +11,7 @@ SUPABASE_URL = "https://mhwepdtjevqupglpurpn.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1od2VwZHRqZXZxdXBnbHB1cnBuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Njg4NTc0MSwiZXhwIjoyMDYyNDYxNzQxfQ.PiMUgXvBj3gPFbY1j4djF5iE3w9lfOeZQaMu5t1Xce0"  # Keep this secret
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-openai.api_key = "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"  # Secure this in production
-
+openai.api_key = "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"
 st.set_page_config(page_title="👤 Signup", layout="centered")
 st.title("Create Your Comic Avatar")
 
