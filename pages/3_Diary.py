@@ -23,8 +23,7 @@ SUPABASE_URL = "https://mhwepdtjevqupglpurpn.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1od2VwZHRqZXZxdXBnbHB1cnBuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Njg4NTc0MSwiZXhwIjoyMDYyNDYxNzQxfQ.PiMUgXvBj3gPFbY1j4djF5iE3w9lfOeZQaMu5t1Xce0"  # Keep this secret
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-openai.api_key = "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"
-
+openai.api_key = "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"
 # Page setup
 def generate_ai_image(prompt, avatar_url):
     try:
